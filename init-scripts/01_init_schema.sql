@@ -1,3 +1,16 @@
+-- USER SQL
+ALTER USER "BD_RESTAURANTE"
+DEFAULT TABLESPACE "USERS"
+TEMPORARY TABLESPACE "TEMP"
+ACCOUNT UNLOCK ;
+
+-- QUOTAS
+
+-- ROLES
+ALTER USER "BD_RESTAURANTE" DEFAULT ROLE "CONNECT","RESOURCE";
+
+-- SYSTEM PRIVILEGES
+
 --------------------------------------------------------
 -- Archivo creado  - domingo-abril-12-2026   
 --------------------------------------------------------
