@@ -1,0 +1,32 @@
+# docker-compose.yml
+services:
+  oracle-db:
+    image: gvenzl/oracle-free:23-faststart
+    container_name: oracle-23ai
+    restart: unless-stopped
+    ports:
+      - "${ORACLE_PORT:-1521}:1521"
+      - "${ORACLE_EM_PORT:-5500}:5500"
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      APP_USER: ${APP_USER}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD}
+      ORACLE_DATABASE: ${ORACLE_DATABASE}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ./init-scripts:/container-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+    shm_size: 1g
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+volumes:
+  oracle_data:
+    driver: local
