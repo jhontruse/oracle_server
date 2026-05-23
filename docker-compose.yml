@@ -12,15 +12,18 @@ services:
       APP_USER: ${APP_USER}
       APP_USER_PASSWORD: ${APP_USER_PASSWORD}
       ORACLE_DATABASE: ${ORACLE_DATABASE}
+      ORACLE_CHARACTERSET:  AL32UTF8
+      TZ: America/Lima
+      
     volumes:
       - oracle_data:/opt/oracle/oradata
       - ./init-scripts:/opt/oracle/scripts/startup:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh"]
-      interval: 15s
+      interval: 20s
       timeout: 10s
-      retries: 15
-      start_period: 120s
+      retries: 20
+      start_period: 180s
     shm_size: 1g
     ulimits:
       nofile:
