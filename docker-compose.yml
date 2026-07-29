@@ -1,34 +1,68 @@
 # docker-compose.yml
+name: oracle-server
+
 services:
   oracle-db:
     image: gvenzl/oracle-free:23-faststart
     container_name: oracle-23ai
     restart: unless-stopped
+
     ports:
-      - "${ORACLE_PORT:-1521}:1521"
-      - "${ORACLE_EM_PORT:-5500}:5500"
+      # Bind solo a localhost: el puerto NO queda expuesto a la red local.
+      # Para exponerlo a otras maquinas, cambia 127.0.0.1 por 0.0.0.0
+      - "127.0.0.1:${ORACLE_PORT:-1521}:1521"
+      - "127.0.0.1:${ORACLE_EM_PORT:-5500}:5500"
+
     environment:
-      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
-      APP_USER: ${APP_USER}
-      APP_USER_PASSWORD: ${APP_USER_PASSWORD}
-      ORACLE_DATABASE: ${ORACLE_DATABASE}
-      ORACLE_CHARACTERSET:  AL32UTF8
-      TZ: America/Lima
-      
+      # Con ":?" el compose falla de inmediato y con mensaje claro si falta la
+      # variable, en vez de arrancar con password vacio y fallar raro despues.
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?falta ORACLE_PASSWORD en .env}
+      APP_USER: ${APP_USER:?falta APP_USER en .env}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?falta APP_USER_PASSWORD en .env}
+      ORACLE_DATABASE: ${ORACLE_DATABASE:?falta ORACLE_DATABASE en .env}
+      ORACLE_CHARACTERSET: AL32UTF8
+      TZ: ${TZ:-America/Lima}
+
     volumes:
       - oracle_data:/opt/oracle/oradata
       - ./init-scripts:/opt/oracle/scripts/startup:ro
+      # Carpeta local para exports/backups (datapump, expdp, scripts)
+      - ./backups:/opt/oracle/backups
+
     healthcheck:
       test: ["CMD", "healthcheck.sh"]
       interval: 20s
       timeout: 10s
       retries: 20
       start_period: 180s
-    shm_size: 1g
+
+    # Oracle necesita apagado limpio. El default de Docker son 10s: insuficiente,
+    # y un SIGKILL a media escritura puede dejar la base inconsistente.
+    stop_grace_period: 60s
+
+    # Oracle recomienda 2GB de memoria compartida
+    shm_size: 2g
+
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
+
+    # Techo de RAM para que Oracle no se coma la memoria del equipo.
+    # Ajustable desde .env si tu maquina tiene mas/menos recursos.
+    deploy:
+      resources:
+        limits:
+          memory: ${ORACLE_MEM_LIMIT:-4g}
+        reservations:
+          memory: ${ORACLE_MEM_RESERVE:-2g}
+
+    # Sin esto los logs crecen sin limite hasta llenar el disco
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   oracle_data:
